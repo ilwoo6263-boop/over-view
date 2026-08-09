@@ -47,6 +47,8 @@ View Point markers + Look Outside moment
 
 The route provider is isolated in `app/google-routes.js`, so the recommendation engine can remain independent from the map provider.
 
-## 5. Important limitation
+## 5. Transit normalization
 
-Google Routes API can calculate walking, driving, bicycling, two-wheel, and transit routes. For this MVP, `bus` and `subway` both map to Google's `TRANSIT` mode. The next iteration should inspect the returned transit details so that actual bus/train legs, stop sequence, vehicle type, and direction can influence View Point visibility.
+Google Routes API can calculate walking, driving, bicycling, two-wheel, and transit routes. `bus` and `subway` both request Google's `TRANSIT` mode; the selected mode is a preference, not a vehicle guarantee.
+
+The adapter requests step locations, travel modes, durations, and `routes.legs.steps.transitDetails`. It normalizes returned steps into a provider-neutral route model with vehicle type, line, headsign, stops, ETA, and heading. Ranking uses those step segments instead of treating the full route as one transport mode.
