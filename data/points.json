@@ -1,0 +1,41 @@
+[
+  {
+    "id": "hangang-sample-001",
+    "title": "한강 풍경 포인트",
+    "category": "nature",
+    "description": "이동 중 한강의 수면과 강변 풍경을 바라볼 수 있는 대표적인 View Point입니다.",
+    "latitude": 37.5208,
+    "longitude": 126.9784,
+    "viewingSide": "right",
+    "transportModes": ["walk", "bus", "subway", "car"],
+    "timing": ["day", "sunset", "night"],
+    "visibilityScore": 0.95,
+    "tags": ["한강", "풍경", "야경"]
+  },
+  {
+    "id": "landmark-sample-002",
+    "title": "도시 랜드마크 포인트",
+    "category": "landmark",
+    "description": "도시의 대표적인 건축물을 이동 경로에서 바라볼 수 있는 포인트입니다.",
+    "latitude": 37.5215,
+    "longitude": 126.9765,
+    "viewingSide": "left",
+    "transportModes": ["walk", "bus", "car"],
+    "timing": ["day", "night"],
+    "visibilityScore": 0.82,
+    "tags": ["건축", "랜드마크", "야경"]
+  },
+  {
+    "id": "culture-sample-003",
+    "title": "문화유산 포인트",
+    "category": "heritage",
+    "description": "이동 경로 주변에서 지나치기 쉬운 문화유산을 바라볼 수 있는 포인트입니다.",
+    "latitude": 37.5192,
+    "longitude": 126.9748,
+    "viewingSide": "front",
+    "transportModes": ["walk", "bus"],
+    "timing": ["day", "sunset"],
+    "visibilityScore": 0.88,
+    "tags": ["문화유산", "역사", "도시"]
+  }
+]
