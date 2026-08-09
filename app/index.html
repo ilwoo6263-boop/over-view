@@ -16,15 +16,9 @@
     </header>
 
     <section class="route-card" aria-label="이동 경로 입력">
-      <label>
-        <span>출발지</span>
-        <input id="origin" value="여의도" placeholder="출발지를 입력하세요" />
-      </label>
+      <label><span>출발지</span><input id="origin" value="여의도" placeholder="출발지를 입력하세요" /></label>
       <div class="route-line" aria-hidden="true"></div>
-      <label>
-        <span>도착지</span>
-        <input id="destination" value="잠실" placeholder="도착지를 입력하세요" />
-      </label>
+      <label><span>도착지</span><input id="destination" value="잠실" placeholder="도착지를 입력하세요" /></label>
       <div class="controls">
         <select id="mode" aria-label="이동수단">
           <option value="bus">🚌 버스</option>
@@ -36,6 +30,8 @@
       </div>
     </section>
 
+    <div class="route-summary" id="routeSummary">경로를 준비하고 있습니다.</div>
+
     <section class="moment" id="moment" hidden>
       <div class="moment-badge">NOW · VIEW MOMENT</div>
       <h2 id="momentTitle">잠깐, 창밖을 보세요.</h2>
@@ -44,16 +40,10 @@
     </section>
 
     <section class="points-section">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">YOUR ROUTE</p>
-          <h2>가는 길의 발견</h2>
-        </div>
-        <span id="resultCount">0 points</span>
-      </div>
+      <div class="section-heading"><div><p class="eyebrow">YOUR ROUTE</p><h2>가는 길의 발견</h2></div><span id="resultCount">0 discoveries</span></div>
       <div id="points" class="points-grid"></div>
     </section>
   </main>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
