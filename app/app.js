@@ -5,7 +5,7 @@ import { addViewMarker, createMap, drawRoute, loadGoogleMaps } from './google-ma
 const pointIcons = { nature: '🌿', landmark: '🏛️', heritage: '🏺', art: '🎨' };
 const origin = document.querySelector('#origin');
 const destination = document.querySelector('#destination');
-const mode = document.querySelector('#mode');
+const selectedMode = () => document.querySelector('input[name="mode"]:checked')?.value || 'bus';
 const startBtn = document.querySelector('#startBtn');
 const pointsEl = document.querySelector('#points');
 const resultCount = document.querySelector('#resultCount');
@@ -16,6 +16,8 @@ const momentText = document.querySelector('#momentText');
 const momentMeta = document.querySelector('#momentMeta');
 const mapEl = document.querySelector('#map');
 const mapStatus = document.querySelector('#mapStatus');
+const routeResult = document.querySelector('#routeResult');
+const onboarding = document.querySelector('#onboarding');
 let map; let routeLine; let markers = [];
 
 async function loadPoints() {
@@ -61,12 +63,12 @@ async function initMap() {
 async function runRoute() {
   startBtn.disabled = true; startBtn.textContent = '실제 경로를 계산하는 중…';
   try {
-    const points = await loadPoints(); const selectedMode = mode.value; const timeContext = getTimeContext(); const apiKey = window.OVER_VIEW_CONFIG?.googleMapsApiKey;
+    const points = await loadPoints(); const transport = selectedMode(); const timeContext = getTimeContext(); const apiKey = window.OVER_VIEW_CONFIG?.googleMapsApiKey;
     if (!apiKey) throw new Error('Google Maps API key is not configured.');
-    const route = await computeGoogleRoute({ apiKey, origin: origin.value, destination: destination.value, mode: selectedMode, departureTime: new Date() });
+    const route = await computeGoogleRoute({ apiKey, origin: origin.value, destination: destination.value, mode: transport, departureTime: new Date() });
     const path = decodePolyline(route.polyline); const ranked = rankViewPoints(points, route, timeContext);
     routeSummary.textContent = `${origin.value} → ${destination.value} · 약 ${(route.distanceMeters / 1000).toFixed(1)}km · ${Math.ceil(route.durationSeconds / 60)}분 · Google Maps`;
-    renderPoints(ranked); renderMoment(ranked[0], timeContext, selectedMode);
+    routeResult.hidden = false; renderPoints(ranked); renderMoment(ranked[0], timeContext, transport);
     if (map) {
       markers.forEach(marker => marker.setMap(null)); markers = []; routeLine?.setMap(null); routeLine = drawRoute(map, path);
       ranked.slice(0, 8).forEach(point => markers.push(addViewMarker(map, point)));
@@ -77,4 +79,6 @@ async function runRoute() {
     pointsEl.innerHTML = '<p>Google Maps 경로를 불러오지 못했습니다.</p>'; moment.hidden = true;
   } finally { startBtn.disabled = false; startBtn.textContent = '실제 경로에서 볼거리 찾기'; }
 }
+document.querySelector('#startExperience').addEventListener('click', () => onboarding.classList.add('is-hidden'));
+document.querySelector('#themeToggle').addEventListener('click', () => document.body.classList.toggle('dark'));
 initMap(); startBtn.addEventListener('click', runRoute);
