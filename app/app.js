@@ -1,6 +1,5 @@
 import { rankViewPoints } from './route-engine.js';
-import { computeGoogleRoute } from './google-routes.js';
-import { addViewMarker, createMap, drawRoute, loadGoogleMaps } from './google-maps.js';
+import { getProvider } from './providers.js';
 
 const pointIcons = { nature: '🌿', landmark: '🏛️', heritage: '🏺', art: '🎨' };
 const origin = document.querySelector('#origin');
@@ -18,6 +17,8 @@ const mapEl = document.querySelector('#map');
 const mapStatus = document.querySelector('#mapStatus');
 const routeResult = document.querySelector('#routeResult');
 const onboarding = document.querySelector('#onboarding');
+
+const provider = getProvider(window.OVER_VIEW_CONFIG || {});
 let map;
 let routeLine;
 let markers = [];
@@ -42,26 +43,6 @@ function getTimeContext(date = new Date()) {
   return hour >= 20 || hour < 5 ? 'night' : 'day';
 }
 
-function decodePolyline(encoded = '') {
-  let index = 0;
-  let lat = 0;
-  let lng = 0;
-  const path = [];
-  while (index < encoded.length) {
-    let result = 0;
-    let shift = 0;
-    let byte;
-    do { byte = encoded.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
-    lat += (result & 1) ? ~(result >> 1) : result >> 1;
-    result = 0;
-    shift = 0;
-    do { byte = encoded.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
-    lng += (result & 1) ? ~(result >> 1) : result >> 1;
-    path.push({ lat: lat / 1e5, lng: lng / 1e5 });
-  }
-  return path;
-}
-
 function etaLabel(seconds) {
   if (!Number.isFinite(seconds)) return '곧';
   return seconds < 60 ? '1분 이내' : `${Math.ceil(seconds / 60)}분 후`;
@@ -83,6 +64,8 @@ function renderMoment(point, timeContext, selectedModeValue) {
   momentMeta.textContent = `${selectedModeValue.toUpperCase()} · ${timeContext.toUpperCase()} · ROUTE ${point.routeDistanceMeters ?? '—'}m${transit}`;
 }
 
+// Key-less fallback: builds a demo route from the seed points so the core UX
+// works without any provider API key configured.
 function buildDemoRoute(points, mode) {
   const path = points.map(point => ({ lat: point.latitude, lng: point.longitude }));
   const segmentCount = Math.max(1, path.length - 1);
@@ -107,17 +90,16 @@ function buildDemoRoute(points, mode) {
 }
 
 async function initMap() {
-  const apiKey = window.OVER_VIEW_CONFIG?.googleMapsApiKey;
-  if (!apiKey) {
+  if (!provider.isConfigured()) {
     mapStatus.textContent = '웹 미리보기 모드';
     return;
   }
   try {
-    await loadGoogleMaps(apiKey);
-    map = createMap(mapEl);
-    mapStatus.textContent = 'Google Maps 연결됨';
+    await provider.loadMaps();
+    map = provider.createMap(mapEl);
+    mapStatus.textContent = `${provider.label} 연결됨`;
   } catch (error) {
-    mapStatus.textContent = 'Google Maps를 불러오지 못했습니다.';
+    mapStatus.textContent = `${provider.label}를 불러오지 못했습니다.`;
     console.warn(error.message);
   }
 }
@@ -129,13 +111,12 @@ async function runRoute() {
     const points = await loadPoints();
     const transport = selectedMode();
     const timeContext = getTimeContext();
-    const apiKey = window.OVER_VIEW_CONFIG?.googleMapsApiKey;
-    const route = apiKey
-      ? await computeGoogleRoute({ apiKey, origin: origin.value, destination: destination.value, mode: transport, departureTime: new Date() })
+    const route = provider.isConfigured()
+      ? await provider.computeRoute({ origin: origin.value, destination: destination.value, mode: transport, departureTime: new Date() })
       : buildDemoRoute(points, transport);
-    const path = route.demo ? route.path : decodePolyline(route.polyline);
+    const path = route.demo ? route.path : provider.routePath(route);
     const ranked = rankViewPoints(points, route, timeContext);
-    routeSummary.textContent = `${origin.value} → ${destination.value} · 약 ${(route.distanceMeters / 1000).toFixed(1)}km · ${Math.ceil(route.durationSeconds / 60)}분 · ${route.demo ? 'Preview' : 'Google Maps'}`;
+    routeSummary.textContent = `${origin.value} → ${destination.value} · 약 ${(route.distanceMeters / 1000).toFixed(1)}km · ${Math.ceil(route.durationSeconds / 60)}분 · ${route.demo ? 'Preview' : provider.label}`;
     routeResult.hidden = false;
     renderPoints(ranked);
     renderMoment(ranked[0], timeContext, transport);
@@ -143,15 +124,11 @@ async function runRoute() {
       markers.forEach(marker => marker.setMap(null));
       markers = [];
       routeLine?.setMap(null);
-      routeLine = drawRoute(map, path);
-      ranked.slice(0, 8).forEach(point => markers.push(addViewMarker(map, point)));
-      if (path.length) {
-        const bounds = new google.maps.LatLngBounds();
-        path.forEach(position => bounds.extend(position));
-        map.fitBounds(bounds, 60);
-      }
+      routeLine = provider.drawRoute(map, path);
+      ranked.slice(0, 8).forEach(point => markers.push(provider.addViewMarker(map, point)));
+      provider.fitRoute(map, path);
     } else {
-      mapEl.innerHTML = '<div class="map-placeholder demo-map"><strong>over-view Preview</strong><br />Google Maps API 키 없이도 핵심 UX를 먼저 체험할 수 있습니다.<br /><span>실제 지도는 API 키 설정 후 표시됩니다.</span></div>';
+      mapEl.innerHTML = '<div class="map-placeholder demo-map"><strong>over-view Preview</strong><br />지도 API 키 없이도 핵심 UX를 먼저 체험할 수 있습니다.<br /><span>실제 지도는 API 키 설정 후 표시됩니다.</span></div>';
     }
   } catch (error) {
     console.error(error);
